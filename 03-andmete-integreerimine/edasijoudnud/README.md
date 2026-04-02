@@ -501,7 +501,7 @@ Loo fail `models/marts/post_activity_daily.sql`, mis arvutab iga kasutaja postit
 ### Nõuded
 
 - **Materialiseerimine:** `incremental`
-- **Komposiitne unique_key:** `['user_key', 'load_date']` — üks rida iga kasutaja + päev kombinatsiooni kohta
+- **Unikaalne liitvõti (unique composite key):** `['user_key', 'load_date']` — üks rida iga kasutaja + päev kombinatsiooni kohta
 - **Veerud:**
   - `user_key` — kasutaja UUID
   - `load_date` — postituste laadimise kuupäev (DATE, mitte TIMESTAMP)
@@ -513,7 +513,7 @@ Loo fail `models/marts/post_activity_daily.sql`, mis arvutab iga kasutaja postit
 ### Vihjed
 
 - `loaded_at::DATE` teisendab ajatempli kuupäevaks
-- Komposiitne unique_key: `unique_key=['user_key', 'load_date']`
+- Unikaalne liitvõti: `unique_key=['user_key', 'load_date']`
 - Kasuta `int_posts` ja `int_users` mudeleid (`ref()` kaudu)
 - `ROUND(AVG(LENGTH(p.body)))` ümardab keskmise täisarvuks
 
@@ -543,7 +543,7 @@ Loo fail `models/marts/post_activity_daily.sql`, mis arvutab iga kasutaja postit
 
 - Mis juhtub, kui `loaded_at` on alati `NOW()`? Vihje: iga käivitamine tekitab "uued" read.
 - Kuidas käsitleksid hilinevaid andmeid (andmed, mis saabuvad hiljem, aga kuuluvad varasemasse perioodi)?
-- Mis on komposiitse ja ühe veeru unique_key erinevus?
+- Mis on liitvõtme ja ühe veeru põhise võtme unikaalsuse (unique_key) erinevus?
 
 ---
 
