@@ -15,7 +15,7 @@
 - [1. Ava õige kaust](#1-ava-õige-kaust)
 - [2. Vaata üle praktikumi failid](#2-vaata-üle-praktikumi-failid)
 - [3. Loo `.env` fail ja kontrolli `.gitignore` reeglit](#3-loo-env-fail-ja-kontrolli-gitignore-reeglit)
-- [4. Käivita andmebaas](#4-käivita-andmebaas)
+- [4. Käivita konteinerid](#4-käivita-konteinerid)
 - [5. Ava `psql` ja kontrolli ühendust](#5-ava-psql-ja-kontrolli-ühendust)
 - [6. Loo skeemid ja toortabel](#6-loo-skeemid-ja-toortabel)
 - [7. Laadi sünteetilised osalejaandmed](#7-laadi-sünteetilised-osalejaandmed)
@@ -32,13 +32,13 @@
 
 ## Praktikumi eesmärk
 
-Selle praktikumi eesmärk on harjutada tundlike andmete turvalist käsitlemist väikeses PostgreSQL andmebaasis.
+Selle praktikumi eesmärk on harjutada tundlike andmete turvalist käsitlemist väikeses PostgreSQL-i andmebaasis.
 
 Praktikumi lõpuks näed läbi ühe lihtsa, aga tööelus väga tavalise olukorra:
 
 - ühes toortabelis on nii analüüsiks vajalikud väljad kui ka isikuandmed;
 - kõik rollid ei tohi näha samu veerge ega samu andmekihte;
-- saladused, näiteks andmebaasi parool, ei kuulu git reposse;
+- saladused, näiteks andmebaasi parool, ei kuulu git ajalukku;
 - andmebaasi õigused peavad järgima minimaalõiguste põhimõtet.
 
 Me ei tee siin õigusnõustamist ega käsitle andmekaitse teemat juriidilise juhendina. Keskendume tehnilisele poolele: kuidas andmeinsener saab andmestiku, rollid ja ligipääsud arusaadavalt ning kontrollitavalt üles seada.
@@ -47,9 +47,9 @@ Me ei tee siin õigusnõustamist ega käsitle andmekaitse teemat juriidilise juh
 
 Praktikumi lõpuks oskad:
 
-- selgitada, mida tähendab `PII` ehk isikut tuvastada võimaldav info;
+- selgitada, mida tähendab `PII` ehk isikut tuvastada võimaldav teave;
 - eristada otsest PII-d, kaudset PII-d ja mitte-PII välju;
-- hoida andmebaasi parooli `.env` failis nii, et see ei läheks git reposse;
+- hoida andmebaasi parooli `.env` failis nii, et see ei jõuaks git ajalukku;
 - luua lihtsad PostgreSQL rollid;
 - anda rollidele ligipääsu vaadetele, mitte otse toortabelile;
 - kontrollida `SET ROLE` abil, mida eri rollid näevad;
@@ -82,7 +82,7 @@ Kasuks tuleb, kui eelmiste baastaseme praktikumide põhjal on tuttavad järgmise
 - oskad avada õige praktikumi kausta;
 - oskad luua `.env` faili `.env.example` põhjal;
 - oskad käivitada käsu `docker compose up -d`;
-- oskad avada `psql` kliendi käsuga `docker compose exec db psql ...`;
+- oskad avada `psql` kliendi käsuga `docker compose exec client psql`;
 - tead, et osa käske käib hosti terminalis ja osa käske käib `psql` sees.
 
 Kui mõni neist sammudest on veel ebakindel, vaata vajadusel üle:
@@ -102,7 +102,14 @@ Selle praktikumi jaoks sobib hästi järgmine tööviis:
 - hoia korraga lahti `README.md`, `compose.yml` ja `scripts/04_create_roles_and_views.sql`;
 - käivita käsud hosti terminalist, kui juhendis ei ole öeldud teisiti.
 
-Host tähendab sinu arvutit või Codespace'i tööruumi. Konteiner tähendab Dockeri sees töötavat teenust. Selles praktikumis on üks konteiner: PostgreSQL andmebaas nimega `db`.
+Host tähendab sinu arvutit või Codespace'i tööruumi. Konteiner tähendab Dockeri sees töötavat teenust.
+
+Selles praktikumis on kaks konteinerit:
+
+- `db` on PostgreSQL andmebaas;
+- `client` on käsurea konteiner, kust käivitad `psql` käsud.
+
+Selline jaotus on tahtlik. Andmebaasi konteiner ei pea nägema sinu `CSV` faile ega SQL-skripte. Neid näeb ainult kliendi konteiner, mis saadab käsud andmebaasile üle Dockeri sisevõrgu.
 
 Kui töötad GitHub Codespacesis, siis on praktikumi kaust tavaliselt siin:
 
@@ -128,7 +135,7 @@ See kustutab ka Dockeri andmemahu. Järgmisel käivitamisel luuakse andmebaas uu
 
 Kõik allpool toodud suhtelised failiteed eeldavad, et asud kaustas `07-andmeturve-ja-privaatsus/baastase`.
 
-- [`compose.yml`](./compose.yml) kirjeldab PostgreSQL andmebaasi konteinerit
+- [`compose.yml`](./compose.yml) kirjeldab PostgreSQL andmebaasi ja `psql` kliendi konteinerit
 - [`.env.example`](./.env.example) sisaldab näidisväärtusi andmebaasi kasutaja, parooli ja pordi jaoks
 - [`.gitignore`](./.gitignore) ütleb gitile, et `.env` faili ei jälgita
 - [`data/osalejad.csv`](./data/osalejad.csv) sisaldab väljamõeldud osalejaandmeid
@@ -141,9 +148,10 @@ Kõik allpool toodud suhtelised failiteed eeldavad, et asud kaustas `07-andmetur
 
 ## Kus praktikumi failid asuvad?
 
-Selles praktikumis on korraga kaks kohta:
+Selles praktikumis on korraga kolm kohta:
 
 - host ehk sinu arvuti või Codespace;
+- kliendi konteiner `client`;
 - andmebaasi konteiner `db`.
 
 Sama fail võib nende jaoks olla eri teega.
@@ -151,17 +159,20 @@ Sama fail võib nende jaoks olla eri teega.
 Näited:
 
 - hostis on fail `data/osalejad.csv`;
-- andmebaasi konteineris on sama fail `/data/osalejad.csv`;
+- kliendi konteineris on sama fail `/data/osalejad.csv`;
 - hostis on fail `scripts/02_load_data.sql`;
-- andmebaasi konteineris on sama fail `/scripts/02_load_data.sql`.
+- kliendi konteineris on sama fail `/scripts/02_load_data.sql`;
+- andmebaasi konteiner `db` neid faile ei näe.
 
 See on oluline, sest käsk:
 
 ```bash
-docker compose exec db psql -U praktikum -d praktikum -f /scripts/02_load_data.sql
+docker compose exec client psql -f /scripts/02_load_data.sql
 ```
 
 käivitab `psql` kliendi konteineri sees. Seepärast kasutame skripti teena `/scripts/02_load_data.sql`, mitte hosti teed `scripts/02_load_data.sql`.
+
+Andmefaili laadimisel kasutame `\copy` käsku. See on `psql` kliendi käsk. Fail loetakse kliendi konteinerist ja saadetakse andmebaasi ühenduse kaudu.
 
 ## Miks see teema on oluline?
 
@@ -190,7 +201,7 @@ Selles praktikumis teeme selle põhimõtte nähtavaks kolme rolliga:
 
 Probleem on selles, et mõni andmeväli võib inimest tuvastada.
 
-`PII` tähendab inglise keeles `Personally Identifiable Information`. Eesti keeles kasutame siin selgitust: isikut tuvastada võimaldav info.
+`PII` tähendab inglise keeles `Personally Identifiable Information`. Eesti keeles kasutame siin selgitust: isikut tuvastada võimaldav teave.
 
 Näide:
 
@@ -257,7 +268,7 @@ Näited:
 - andmebaasi parool;
 - `API` võti;
 - privaatvõti;
-- teenuse ligipääsutoken.
+- teenuse ligipääsumärgis.
 
 Selles praktikumis on parool õppekeskkonna lihtne näidisväärtus, kuid töövõte on sama: parool on `.env` failis, mitte koodis.
 
@@ -282,7 +293,7 @@ Päris tööelus ei tohiks tootmise parool olla nii lihtne ega repos nähtav.
 
 `.gitignore` ütleb gitile, milliseid faile ei jälgita.
 
-Probleem, mida `.gitignore` lahendab: arendaja võib vajada kohalikku `.env` faili, aga seda ei tohi kogemata commit'ida.
+Probleem, mida `.gitignore` lahendab: arendaja võib vajada kohalikku `.env` faili, aga seda ei tohi kogemata git ajalukku lisada.
 
 Selles praktikumis sisaldab `.gitignore` rida:
 
@@ -410,11 +421,11 @@ Oodatav tulemus on midagi sarnast:
 
 Kui käsk ei väljasta midagi, siis git ei ignoreeri `.env` faili. Kontrolli, et failis `.gitignore` oleks rida `.env`.
 
-## 4. Käivita andmebaas
+## 4. Käivita konteinerid
 
 See samm tehakse hosti terminalis.
 
-Käivita PostgreSQL konteiner:
+Käivita andmebaasi ja kliendi konteinerid:
 
 ```bash
 docker compose up -d
@@ -423,26 +434,26 @@ docker compose up -d
 Käsk teeb kaks asja:
 
 - loeb seadistuse failist `compose.yml`;
-- käivitab andmebaasi taustal.
+- käivitab andmebaasi ja `psql` kliendi konteineri taustal.
 
-Kontrolli konteineri seisu:
+Kontrolli konteinerite seisu:
 
 ```bash
 docker compose ps
 ```
 
-Oodatav tulemus: teenus `db` on olekus `running` või `healthy`.
+Oodatav tulemus: teenus `db` on olekus `running` või `healthy` ning teenus `client` on olekus `running`.
 
 Kui näed veateadet pordi kohta, näiteks `port is already allocated`, on port `5437` juba kasutusel. Vaata lahendust jaotisest [Levinud vead ja lahendused](#levinud-vead-ja-lahendused).
 
 ## 5. Ava `psql` ja kontrolli ühendust
 
-See samm avab `psql` kliendi andmebaasi konteineri sees.
+See samm avab `psql` kliendi `client` konteineri sees.
 
 Käivita hosti terminalis:
 
 ```bash
-docker compose exec db psql -U praktikum -d praktikum
+docker compose exec client psql
 ```
 
 Kui ühendus õnnestub, näed prompti:
@@ -459,7 +470,7 @@ Kontrolli ühendust:
 \conninfo
 ```
 
-Oodatav tulemus: `psql` ütleb, et oled ühendatud andmebaasiga `praktikum`.
+Oodatav tulemus: `psql` ütleb, et oled ühendatud andmebaasiga `praktikum` hostis `db`.
 
 Välju `psql`-ist:
 
@@ -476,7 +487,7 @@ See samm tehakse hosti terminalis.
 Käivita esimene SQL-skript:
 
 ```bash
-docker compose exec db psql -U praktikum -d praktikum -f /scripts/01_create_objects.sql
+docker compose exec client psql -f /scripts/01_create_objects.sql
 ```
 
 Skript loob kolm skeemi:
@@ -490,7 +501,7 @@ Samuti loob skript tabeli `staging.osalejad_raw`.
 Kontrolli, et tabel on olemas:
 
 ```bash
-docker compose exec db psql -U praktikum -d praktikum -c '\dt staging.*'
+docker compose exec client psql -c '\dt staging.*'
 ```
 
 Oodatav tulemus: nimekirjas on tabel `staging.osalejad_raw`.
@@ -502,10 +513,10 @@ See samm tehakse hosti terminalis.
 Laadi andmed failist `data/osalejad.csv`:
 
 ```bash
-docker compose exec db psql -U praktikum -d praktikum -f /scripts/02_load_data.sql
+docker compose exec client psql -f /scripts/02_load_data.sql
 ```
 
-Skript kasutab `\copy` käsku. See loeb `CSV` faili konteineri teelt `/data/osalejad.csv` ja lisab read tabelisse `staging.osalejad_raw`.
+Skript kasutab `\copy` käsku. See loeb `CSV` faili kliendi konteineri teelt `/data/osalejad.csv` ja lisab read tabelisse `staging.osalejad_raw`.
 
 Oodatav tulemus:
 
@@ -519,7 +530,7 @@ COPY 12
 Vaata esimesi ridu:
 
 ```bash
-docker compose exec db psql -U praktikum -d praktikum -c 'SELECT osaleja_id, eesnimi, perenimi, email, linn, kursus FROM staging.osalejad_raw ORDER BY osaleja_id LIMIT 5;'
+docker compose exec client psql -c 'SELECT osaleja_id, eesnimi, perenimi, email, linn, kursus FROM staging.osalejad_raw ORDER BY osaleja_id LIMIT 5;'
 ```
 
 Selles tabelis on ainult väljamõeldud õppeandmed. Me käsitleme neid siiski nagu päris isikuandmeid, sest töövõte peab olema sama.
@@ -531,7 +542,7 @@ See samm tehakse hosti terminalis.
 Loo PII register:
 
 ```bash
-docker compose exec db psql -U praktikum -d praktikum -f /scripts/03_create_pii_register.sql
+docker compose exec client psql -f /scripts/03_create_pii_register.sql
 ```
 
 PII register on väike tabel, mis kirjeldab toortabeli veerge.
@@ -539,7 +550,7 @@ PII register on väike tabel, mis kirjeldab toortabeli veerge.
 Vaata registrit:
 
 ```bash
-docker compose exec db psql -U praktikum -d praktikum -c 'SELECT column_name, pii_category, handling_note FROM governance.pii_register ORDER BY sort_order;'
+docker compose exec client psql -c 'SELECT column_name, pii_category, handling_note FROM governance.pii_register ORDER BY sort_order;'
 ```
 
 Oodatav tulemus: näed iga veeru juures kategooriat `otsene PII`, `kaudne PII` või `ei ole PII`.
@@ -559,7 +570,7 @@ See samm tehakse hosti terminalis.
 Käivita turvaseadistuse skript:
 
 ```bash
-docker compose exec db psql -U praktikum -d praktikum -f /scripts/04_create_roles_and_views.sql
+docker compose exec client psql -f /scripts/04_create_roles_and_views.sql
 ```
 
 Skript teeb neli asja:
@@ -572,7 +583,7 @@ Skript teeb neli asja:
 Kontrolli turvatud vaateid:
 
 ```bash
-docker compose exec db psql -U praktikum -d praktikum -c '\dv secured.*'
+docker compose exec client psql -c '\dv secured.*'
 ```
 
 Oodatav tulemus: näed vaateid `v_osalejad_analyytik` ja `v_osalejad_aruandlus`.
@@ -580,7 +591,7 @@ Oodatav tulemus: näed vaateid `v_osalejad_analyytik` ja `v_osalejad_aruandlus`.
 Vaata õiguste kokkuvõtet:
 
 ```bash
-docker compose exec db psql -U praktikum -d praktikum -c '\z secured.*'
+docker compose exec client psql -c '\z secured.*'
 ```
 
 Oodatav tulemus: `analyytik` on seotud analyytiku vaatega ja `aruandlus` aruandluse vaatega.
@@ -592,7 +603,7 @@ See samm tehakse hosti terminalis.
 Käivita kontrollskript:
 
 ```bash
-docker compose exec db psql -U praktikum -d praktikum -f /scripts/05_check_results.sql
+docker compose exec client psql -f /scripts/05_check_results.sql
 ```
 
 Skript kontrollib:
@@ -620,7 +631,7 @@ See samm tehakse `psql` sees.
 Ava `psql`:
 
 ```bash
-docker compose exec db psql -U praktikum -d praktikum
+docker compose exec client psql
 ```
 
 Võta analyytiku roll:
@@ -672,18 +683,19 @@ Välju `psql`-ist:
 
 See samm tehakse hosti terminalis.
 
-Vaata õigusi süsteemikataloogide asemel lihtsa kontrollpäringuga:
+Vaata õigusi `psql`-i õiguste vaates:
 
 ```bash
-docker compose exec db psql -U praktikum -d praktikum -c "SELECT * FROM (VALUES ('analyytik', 'staging.osalejad_raw', has_table_privilege('analyytik', 'staging.osalejad_raw', 'SELECT')), ('analyytik', 'secured.v_osalejad_analyytik', has_table_privilege('analyytik', 'secured.v_osalejad_analyytik', 'SELECT')), ('aruandlus', 'secured.v_osalejad_aruandlus', has_table_privilege('aruandlus', 'secured.v_osalejad_aruandlus', 'SELECT')), ('auditor', 'staging.osalejad_raw', has_table_privilege('auditor', 'staging.osalejad_raw', 'SELECT'))) AS t(role_name, object_name, can_select);"
+docker compose exec client psql -c '\z staging.*'
+docker compose exec client psql -c '\z secured.*'
 ```
 
-Oodatav mõte:
+Oodatav tulemus:
 
-- `analyytik` toortabeli juures on `false`;
-- `analyytik` maskeeritud vaate juures on `true`;
-- `aruandlus` koondvaate juures on `true`;
-- `auditor` toortabeli juures on `true`.
+- `staging.osalejad_raw` juures on näha `auditor` õigus;
+- `secured.v_osalejad_analyytik` juures on näha `analyytik` õigus;
+- `secured.v_osalejad_aruandlus` juures on näha `aruandlus` õigus;
+- `analyytik` ja `aruandlus` ei ole toortabeli õiguste juures.
 
 See ongi minimaalõiguste põhimõte praktilisel kujul.
 
@@ -692,7 +704,7 @@ See ongi minimaalõiguste põhimõte praktilisel kujul.
 Praktikumi lõpuks peaksid saama kinnitada järgmised väited:
 
 - `.env` fail on loodud, aga git ignoreerib seda.
-- Andmebaasi konteiner `db` töötab.
+- Andmebaasi konteiner `db` ja kliendi konteiner `client` töötavad.
 - Tabelis `staging.osalejad_raw` on 12 rida.
 - Tabel `governance.pii_register` kirjeldab kõiki toortabeli olulisi veerge.
 - Roll `analyytik` näeb maskeeritud vaadet, kuid mitte toortabelit.
@@ -747,7 +759,7 @@ docker compose up -d
 **Lahendus:** käivita esimene skript uuesti:
 
 ```bash
-docker compose exec db psql -U praktikum -d praktikum -f /scripts/01_create_objects.sql
+docker compose exec client psql -f /scripts/01_create_objects.sql
 ```
 
 ### `permission denied for schema staging`
@@ -768,7 +780,7 @@ LIMIT 3;
 
 **Sümptom:** terminal ütleb `syntax error`, `command not found` või `invalid command`.
 
-**Tõenäoline põhjus:** SQL käsk sisestati hosti terminali või terminalikäsk sisestati `psql` sisse.
+**Tõenäoline põhjus:** SQL-käsk sisestati hosti terminali või terminalikäsk sisestati `psql` sisse.
 
 **Lahendus:** kontrolli prompti.
 
@@ -825,10 +837,10 @@ Kontrollküsimus: kas `osaleja_id` peaks selles vaates olema? Põhjenda oma otsu
 
 ## Koristamine
 
-Kui tahad eemaldada ainult praktikumi andmebaasi objektid, jäta konteiner tööle ja käivita:
+Kui tahad eemaldada ainult praktikumi andmebaasi objektid, jäta konteinerid tööle ja käivita:
 
 ```bash
-docker compose exec db psql -U praktikum -d praktikum -f /scripts/99_reset.sql
+docker compose exec client psql -f /scripts/99_reset.sql
 ```
 
 Kui tahad peatada konteineri, aga andmemahu alles jätta:
