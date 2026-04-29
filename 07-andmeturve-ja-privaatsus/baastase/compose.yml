@@ -33,8 +33,9 @@ services:
       db:
         condition: service_healthy
     volumes:
-      - ./data:/data:ro
-      - ./scripts:/scripts:ro
+      - ./data:/app/data:ro
+      - ./scripts:/app/scripts:ro
+    working_dir: /app
     entrypoint: ["tail", "-f", "/dev/null"]
 
 volumes:
