@@ -14,7 +14,7 @@ ORDER BY sort_order;
 \echo '3. Kontrollin, millisel rollil on SELECT õigus millisele objektile.'
 
 -- has_table_privilege küsib PostgreSQLilt, kas rollil on valitud objekti lugemisõigus.
--- Siin peaks analyytik ja aruandlus toortabeli juures näitama false.
+-- Oodatav tulemus: analyytik ja aruandlus ei saa toortabelit lugeda.
 SELECT *
 FROM (
     VALUES

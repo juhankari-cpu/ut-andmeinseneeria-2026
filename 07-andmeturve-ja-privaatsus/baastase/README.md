@@ -107,7 +107,7 @@ Selles praktikumis on kaks konteinerit:
 - `db` on PostgreSQL andmebaas;
 - `client` on käsurea konteiner, kust käivitad `psql` käsud.
 
-Selles praktikumis käivitad käsud `client` konteineris. `db` konteiner hoiab ainult andmebaasi.
+Kui käsus on `docker compose exec client psql`, siis käivitatakse `psql` `client` konteineris. `db` konteiner hoiab ainult andmebaasi.
 
 Kui töötad GitHub Codespacesis, siis on praktikumi kaust tavaliselt siin:
 
@@ -146,7 +146,7 @@ Kõik allpool toodud suhtelised failiteed eeldavad, et asud kaustas `07-andmetur
 
 Käsud kasutavad suhtelisi teid, näiteks `scripts/02_load_data.sql` ja `data/osalejad.csv`. Nii töötavad samad käsud macOS-is, Linuxis, Git Bashis, Windows PowerShellis ja GitHub Codespacesis.
 
-Kui käivitad käsu kujul `docker compose exec client psql ...`, siis töötab `psql` kliendi konteineris. SQL-käsud saadetakse andmebaasi üle Dockeri sisevõrgu. Andmefaili loeb `\copy` käsu ajal samuti kliendi konteiner.
+Andmefaili laadimisel kasutab skript `\copy` käsku. See tähendab, et `data/osalejad.csv` loetakse kliendi konteinerist ja saadetakse sealt andmebaasi.
 
 ## Miks see teema on oluline?
 
@@ -244,7 +244,7 @@ Näited:
 - privaatvõti;
 - teenuse ligipääsumärgis.
 
-Selles praktikumis on parool õppekeskkonna lihtne näidisväärtus, kuid töövõte on sama: parool on `.env` failis, mitte koodis.
+Selles praktikumis on parool õppekeskkonna näidisväärtus, kuid töövõte on sama: parool on `.env` failis, mitte koodis.
 
 ### `.env`
 
@@ -261,7 +261,7 @@ POSTGRES_DB=praktikum
 DB_PORT_HOST=5437
 ```
 
-Päris tööelus ei tohiks tootmise parool olla nii lihtne ega git ajaloos nähtav.
+Päris tööelus peab tootmise parool olema tugev ja git ajaloost väljas.
 
 ### `.gitignore`
 
@@ -335,7 +335,7 @@ See on väike tehniline tabel, kus märgid toortabeli veergude kohta:
 
 Andmekataloog on laiem tööriist või süsteem. Seal hoitakse tavaliselt tabelite kirjeldusi, omanikke, ärimõisteid, silte, kvaliteediinfot ning infot andmete päritolu ja liikumise kohta.
 
-Andmetöötlusregister ehk töötlemistoimingute register on teine asi. See kirjeldab andmetöötluse tegevusi, näiteks töötlemise eesmärki, vastutajaid, andmesubjekte, säilitust ja jagamist. Selles praktikumis me seda juriidilist vaadet ei koosta.
+Andmetöötlusregister ehk töötlemistoimingute register on teine asi. See kirjeldab andmetöötluse tegevusi, näiteks töötlemise eesmärki, vastutajaid, andmesubjekte, säilitust ja jagamist. Selles praktikumis seda juriidilist vaadet ei koostata.
 
 Praktikas hoitakse PII klassifikatsiooni sageli andmekataloogis. Üks hea tööriist, mida edasi uurida, on [`OpenMetadata`](https://docs.open-metadata.org/latest/how-to-guides/data-governance/classification/overview). Seal saab andmeobjektidele lisada kirjeldusi, omanikke, termineid, silte ja klassifikatsioone. Sama ülesannet võivad täita ka `DataHub`, `Microsoft Purview`, `Collibra`, `Alation` või pilveplatvormi enda kataloogiteenus.
 
@@ -485,7 +485,7 @@ See samm tehakse hosti terminalis.
 
 Enne skripti käivitamist vaata skeeminimede mõtet. Selles praktikumis kasutame nimesid, mis kirjeldavad andmete turvakihti. Need nimed võivad erineda varasematest praktikumidest, kus fookus oli pigem laadimisel, mudeldamisel või analüütilisel kihil.
 
-Skeeminimed on siin teadlik õppevalik:
+Skeeminimed on valitud selle praktikumi eesmärgi järgi:
 
 - `staging` tähendab toorandmete ala, kuhu jõuab algne andmestik;
 - `governance` tähendab andmete kirjeldamise ja PII otsuste ala;
