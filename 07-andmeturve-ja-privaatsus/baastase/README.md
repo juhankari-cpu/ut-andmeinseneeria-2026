@@ -908,7 +908,7 @@ Vaata kõrvale [edasijõudnute 7. praktikumi juhendit](../edasijoudnud/README.md
 
 Siin hoidsid PII infot tabelis `governance.pii_register`, et otsused oleksid SQL-is nähtavad. Päris projektis hoitakse sellist infot sageli andmekataloogis.
 
-Hea edasiuurimise tööriist on [`OpenMetadata`](https://docs.open-metadata.org/latest/how-to-guides/data-governance/classification/overview). Vaata sealt eriti klassifikatsioonide, siltide ja ärisõnastiku mõtet. Küsi endalt: kuidas leida kõik tabelid või veerud, mis on märgitud PII-na?
+Hea edasiuurimise tööriist on [`OpenMetadata`](https://docs.open-metadata.org/v1.11.x/how-to-guides/data-governance/classification). Vaata sealt eriti klassifikatsioonide, siltide ja ärisõnastiku mõtet. Küsi endalt: kuidas leida kõik tabelid või veerud, mis on märgitud PII-na?
 
 **4. Mõtle, mis jääb andmebaasi ja mis kuulub andmeplatvormi.**
 
